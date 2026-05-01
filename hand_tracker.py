@@ -1,5 +1,6 @@
 import cv2
 import mediapipe as mp
+import math  # 거리 계산을 위해 math 모듈 추가
 
 class HandDetector:
     def __init__(self, max_hands=2, detection_con=0.7, track_con=0.5):
@@ -12,30 +13,40 @@ class HandDetector:
         self.mp_draw = mp.solutions.drawing_utils
 
     def find_hands(self, frame):
-        """손을 찾고 랜드마크를 반환합니다."""
         img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.hands.process(img_rgb)
         return results
 
+    # ---- 이 부분을 새로운 거리 계산 로직으로 교체하세요 ----
     def is_fist(self, hand_landmarks):
-        """4개 손가락이 접혔는지 확인하여 주먹 여부를 판단합니다."""
-        tips = [8, 12, 16, 20] # 검지, 중지, 약지, 새끼 끝
+        """손의 방향(회전)과 무관하게 손목과의 거리로 주먹 여부를 판단합니다."""
+        tips = [8, 12, 16, 20] # 검지, 중지, 약지, 새끼 끝 마디
         pips = [6, 10, 14, 18] # 두 번째 마디
+        wrist = hand_landmarks.landmark[0] # 손목 랜드마크 (0번 기준점)
         
         folded_count = 0
         for tip, pip in zip(tips, pips):
-            if hand_landmarks.landmark[tip].y > hand_landmarks.landmark[pip].y:
+            tip_lm = hand_landmarks.landmark[tip]
+            pip_lm = hand_landmarks.landmark[pip]
+            
+            # math.hypot(피타고라스 정리)를 이용해 손목부터 각 마디까지의 직선 거리 계산
+            dist_tip = math.hypot(tip_lm.x - wrist.x, tip_lm.y - wrist.y)
+            dist_pip = math.hypot(pip_lm.x - wrist.x, pip_lm.y - wrist.y)
+            
+            # 손가락 끝(Tip)이 두 번째 마디(PIP)보다 손목에 더 가까워지면 접힌 것으로 판단
+            if dist_tip < dist_pip:
                 folded_count += 1
+                
+        # 4개 중 3개 이상 접혔을 때 True 반환
         return folded_count >= 3
+    # -----------------------------------------------------
 
     def get_hand_info(self, frame, results):
-        """손의 위치(좌표)와 어느 쪽 손인지 정보를 추출합니다."""
         hands_list = []
         if results.multi_hand_landmarks:
             for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                label = handedness.classification[0].label # 'Left' or 'Right'
+                label = handedness.classification[0].label 
                 h, w, _ = frame.shape
-                # 손목(0번) 좌표
                 cx, cy = int(hand_landmarks.landmark[0].x * w), int(hand_landmarks.landmark[0].y * h)
                 
                 hands_list.append({
