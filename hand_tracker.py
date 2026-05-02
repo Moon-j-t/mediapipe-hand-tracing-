@@ -19,7 +19,7 @@ class HandDetector:
             'Right': {'start_x': None, 'start_y': None, 'prev_lead': None, 'cross_count': 0, 'last_walk_time': 0}
         }
         
-        self.MIN_WALK_DIST = 40 
+        self.MIN_WALK_DIST = 20 
 
     def find_hands(self, frame):
         img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -135,7 +135,7 @@ class HandDetector:
                     self.walk_states[label]['last_walk_time'] = current_time
 
                 # [핵심] 주먹쥐기 판별: 마지막 걷기 발동 시간으로부터 0.5초가 안 지났으면 검사도 하지 않고 강제로 False 처리
-                if current_time - self.walk_states[label]['last_walk_time'] < 0.5:
+                if current_time - self.walk_states[label]['last_walk_time'] < 1.0:
                     is_fist = False
                 else:
                     is_fist = self.is_fist(hand_landmarks)
