@@ -38,7 +38,7 @@ class HandDetector:
             dist_joint = math.hypot(joint_lm.x - wrist.x, joint_lm.y - wrist.y)
             
             # 엄지는 50%, 나머지는 15% 여유 허용 (이전 조건 유지)
-            tolerance = 1.6 if tip == 4 else 1.15
+            tolerance = 1.7 if tip == 4 else 1.15
             
             if dist_tip > dist_joint * tolerance:
                 return False
@@ -130,7 +130,7 @@ class HandDetector:
                 # 먼저 걷기 이벤트를 판별합니다.
                 is_walking = self.is_walking_fingers(hand_landmarks, cx, cy, label)
                 
-                # 걷기 이벤트가 발동했다면 현재 시간을 기록합니다.
+                # 걷기 이벤트가 발동했다면 현재 시간을 기록합니다.|
                 if is_walking:
                     self.walk_states[label]['last_walk_time'] = current_time
 
